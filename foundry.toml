@@ -1,0 +1,11 @@
+[profile.default]
+src = "contracts"
+out = "out"
+libs = ["lib"]
+gas_price = 100_000_000_000 # 100 gwei in wei (no quotes!)
+
+[rpc_endpoints]
+celo = "https://forno.celo.org"
+
+[etherscan]
+celo = { key = "${X598P214QGGW9TQVSRA9272FNGP2E28V54}", chain = 42220 }

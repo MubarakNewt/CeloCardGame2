@@ -1,0 +1,80 @@
+import { useState, useEffect } from "react";
+import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { duelAbi } from "../abi/Duel";
+import { DUEL_ADDRESS } from "../utils/constants";
+import { Swords, Loader2 } from "lucide-react";
+
+export const StartDuel = ({
+  selectedCardId,
+}: {
+  selectedCardId: number | null;
+}) => {
+  const { writeContract, data, isPending, isError, error } = useWriteContract();
+  const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
+
+  useEffect(() => {
+    if (!data) return;
+    const maybeHash =
+      typeof data === "string"
+        ? (data as `0x${string}`)
+        : (data as any)?.hash ?? (data as any)?.transactionHash;
+    setTxHash(maybeHash);
+    console.log("writeContract data:", data, "-> txHash:", maybeHash);
+  }, [data]);
+
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash: txHash,
+  });
+
+  const handleStartDuel = async () => {
+    if (selectedCardId === null) return;
+    try {
+      await writeContract({
+        address: DUEL_ADDRESS as `0x${string}`,
+        abi: duelAbi,
+        functionName: "startBattle",
+        args: [BigInt(selectedCardId)], // 👈 convert number → bigint
+      });
+    } catch (err) {
+      console.error("Start duel failed:", err);
+    }
+  };
+
+  return (
+    <div>
+      <button
+        onClick={handleStartDuel}
+        className="px-4 py-2 rounded bg-rose-600"
+        disabled={isPending || isConfirming}
+      >
+        {isPending || isConfirming ? (
+          <span className="flex items-center gap-2">
+            <Loader2 className="animate-spin" />
+            Starting...
+          </span>
+        ) : (
+          <span className="flex items-center gap-2">
+            <Swords />
+            Start
+          </span>
+        )}
+      </button>
+
+      {isSuccess && txHash && (
+        <div className="mt-2 p-3 bg-green-900/20 border border-green-500 rounded">
+          <p className="text-green-200 text-sm">
+            Battle started — tx confirmed.
+          </p>
+        </div>
+      )}
+
+      {isError && (
+        <div className="mt-2 p-3 bg-red-900/20 border border-red-500 rounded">
+          <p className="text-red-400 text-sm">
+            {error?.message || "Failed to start battle"}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};

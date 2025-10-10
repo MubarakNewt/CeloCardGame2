@@ -7,7 +7,7 @@ export const CHAIN = celo;
 
 // 🧱 CONTRACT ADDRESSES (update these with your deployed ones on Celo Mainnet)
 export const CARD_FACTORY_ADDRESS = "0xb9bF073D5413Cb0e1938f0De05EFc2621Bb3AbD4" as const;
-export const DUEL_ADDRESS = "0x98C84275D80468681F8dc4b8C1b8Aaf8480127FC" as const;
+export const DUEL_ADDRESS = "0x9c8B984ebB7F957761906f7B3B5f63EBE414001D" as const;
 
 // 📜 CONTRACT ABIs
 export const CARD_FACTORY_ABI = cardFactoryAbi;

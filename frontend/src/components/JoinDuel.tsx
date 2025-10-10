@@ -5,25 +5,33 @@ import {
   useAccount,
 } from "wagmi";
 import { duelAbi } from "../abi/Duel";
-import { CONTRACTS } from "../utils/constants";
+import { DUEL_ADDRESS } from "../utils/constants";
 import { getExplorerUrl } from "../utils/helpers";
 import { Loader2, ExternalLink, UserPlus } from "lucide-react";
 
-export const JoinDuel = ({
-  selectedCardId,
-}: {
+interface JoinDuelProps {
   selectedCardId: number | null;
-}) => {
+  selectedBattleId?: number; // ✅ add this new prop
+}
+
+export const JoinDuel = ({ selectedCardId, selectedBattleId }: JoinDuelProps) => {
   const [battleId, setBattleId] = useState("");
   const { isConnected } = useAccount();
   const { writeContract, data, isPending, isError, error } = useWriteContract();
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
 
+  // ✅ When a battle is selected from BattleList, auto-fill its ID
+  useEffect(() => {
+    if (selectedBattleId !== undefined) {
+      setBattleId(String(selectedBattleId));
+    }
+  }, [selectedBattleId]);
+
   useEffect(() => {
     if (!data) return;
     const maybeHash =
       typeof data === "string"
-        ? data
+        ? (data as `0x${string}`)
         : (data as any)?.hash ?? (data as any)?.transactionHash;
 
     if (maybeHash?.startsWith("0x")) {
@@ -41,7 +49,7 @@ export const JoinDuel = ({
     if (!isConnected || selectedCardId === null || !battleId.trim()) return;
     try {
       await writeContract({
-        address: CONTRACTS.duel as `0x${string}`,
+        address: DUEL_ADDRESS as `0x${string}`,
         abi: duelAbi,
         functionName: "joinBattle",
         args: [BigInt(battleId), BigInt(selectedCardId)],
@@ -58,7 +66,7 @@ export const JoinDuel = ({
       <input
         value={battleId}
         onChange={(e) => setBattleId(e.target.value)}
-        placeholder="Enter battle ID"
+        placeholder="Enter or select a battle ID"
         className="w-full px-3 py-2 mb-4 rounded bg-slate-700 text-white"
       />
 

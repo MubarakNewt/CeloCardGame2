@@ -6,8 +6,8 @@ import cardFactoryAbi from "../abi/CardFactory";
 export const CHAIN = celo;
 
 // 🧱 CONTRACT ADDRESSES (update these with your deployed ones on Celo Mainnet)
-export const CARD_FACTORY_ADDRESS = "0xb9bF073D5413Cb0e1938f0De05EFc2621Bb3AbD4" as const;
-export const DUEL_ADDRESS = "0x9c8B984ebB7F957761906f7B3B5f63EBE414001D" as const;
+export const CARD_FACTORY_ADDRESS = "0x53dC70EFC275a850109FaD2eb2BF75C81621d09f" as const;
+export const DUEL_ADDRESS = "0x3095bd8442c3d4FEABC7582171087c94dE35e986" as const;
 
 // 📜 CONTRACT ABIs
 export const CARD_FACTORY_ABI = cardFactoryAbi;

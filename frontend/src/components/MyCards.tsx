@@ -1,6 +1,5 @@
 // src/components/MyCards.tsx
 import {
-  useReadContract,
   useAccount,
   usePublicClient,
   useWatchContractEvent,
@@ -10,12 +9,17 @@ import { CARD_FACTORY_ADDRESS } from "../utils/constants";
 import { formatCardPower } from "../utils/helpers";
 import { Sword, Loader2, Layers } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { onEvent } from "../utils/globalEvents";
 
 interface Card {
   id: bigint;
   name: string;
+  classType: string;
+  element: string;
   power: bigint;
   owner: string;
+  wins: bigint;
+  losses: bigint;
 }
 
 export const MyCards = ({
@@ -23,89 +27,118 @@ export const MyCards = ({
 }: {
   onSelectCard?: (cardId: number) => void;
 }) => {
-  console.log("MyCards render start");
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const [cards, setCards] = useState<Card[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const { data: cardCount, refetch, isLoading, error: readError } = useReadContract({
-    address: CARD_FACTORY_ADDRESS as `0x${string}`,
-    abi: cardFactoryAbi,
-    functionName: "cardCount",
-  });
-
-  useEffect(() => {
-    console.log("cardCounter changed:", cardCount);
-  }, [cardCount]);
-
-  // ✅ fixed fetchCards logic
+  // ✅ Fetch cards directly from getMyCards()
   const fetchCards = useCallback(async () => {
-    console.log("fetchCards called", { cardCount, address });
-    if (!cardCount || !address || !publicClient) return;
+    if (!address || !publicClient) return;
+    setLoading(true);
 
-    const totalCards = Number(cardCount);
-    const userCards: Card[] = [];
+    try {
+      const userCards = (await publicClient.readContract({
+        address: CARD_FACTORY_ADDRESS as `0x${string}`,
+        abi: cardFactoryAbi,
+        functionName: "getMyCards",
+        account: address, // ✅ include account to ensure context is correct
+      })) as Card[];
 
-    for (let i = 1; i <= totalCards; i++) {
-      try {
-        const cardData = (await publicClient.readContract({
-          address: CARD_FACTORY_ADDRESS as `0x${string}`,
-          abi: cardFactoryAbi,
-          functionName: "cards",
-          args: [BigInt(i)],
-        })) as [bigint, string, bigint, string];
+      console.log("Fetched cards:", userCards);
 
-        console.log(`Card ${i} data:`, cardData);
-
-        const [id, name, power, owner] = cardData;
-
-        if (owner.toLowerCase() === address.toLowerCase()) {
-          userCards.push({ id, name, power, owner });
-        }
-      } catch (err) {
-        console.error(`Failed to fetch card ${i}:`, err);
+      // ⚠️ Defensive: ensure `userCards` is an array before setting state
+      if (Array.isArray(userCards)) {
+        setCards(userCards);
+      } else {
+        console.warn("Unexpected data from getMyCards:", userCards);
+        setCards([]);
       }
+    } catch (err) {
+      console.error("Failed to fetch cards:", err);
+      setCards([]);
+    } finally {
+      setLoading(false);
     }
+  }, [address, publicClient]);
 
-    console.log("Fetched userCards:", userCards.length);
-    setCards(userCards);
-  }, [cardCount, address, publicClient]);
-
+  // 🔁 Fetch on load + whenever wallet connects
   useEffect(() => {
-    fetchCards();
-  }, [fetchCards]);
+    if (isConnected) {
+      fetchCards();
+    } else {
+      setCards([]);
+    }
+  }, [isConnected, fetchCards]);
 
-  useWatchContractEvent({
+  // 👀 Watch for CardCreated and CardsMerged events
+  // 👀 Watch for contract events via wagmi + manual event + fallback polling
+useEffect(() => {
+  if (!publicClient) return;
+
+  // 1️⃣ wagmi live listener for CardCreated
+  const unwatchCreated = publicClient.watchContractEvent({
     address: CARD_FACTORY_ADDRESS as `0x${string}`,
     abi: cardFactoryAbi,
-    eventName: "CardCreated", // ✅ your event name in contract
-    onLogs() {
-      console.log("Detected CardCreated event — refetching");
-      fetchCards();
-      refetch?.();
+    eventName: "CardCreated",
+    onLogs: (logs) => {
+      console.log("🟢 CardCreated detected via publicClient:", logs);
+      setTimeout(fetchCards, 1500); // short delay for RPC sync
     },
   });
 
+  // 2️⃣ wagmi live listener for CardsMerged
+  const unwatchMerged = publicClient.watchContractEvent({
+    address: CARD_FACTORY_ADDRESS as `0x${string}`,
+    abi: cardFactoryAbi,
+    eventName: "CardsMerged",
+    onLogs: (logs) => {
+      console.log("🟢 CardsMerged detected via publicClient:", logs);
+      setTimeout(fetchCards, 1500);
+    },
+  });
+
+  // 3️⃣ Fallback: listen for frontend-dispatched "cardMinted" event
+  const localMintHandler = () => {
+    console.log("💬 window cardMinted event – refetching cards");
+    fetchCards();
+  };
+  window.addEventListener("cardMinted", localMintHandler);
+
+  return () => {
+    unwatchCreated?.();
+    unwatchMerged?.();
+    window.removeEventListener("cardMinted", localMintHandler);
+  };
+}, [publicClient, fetchCards]);
+
+
+  // 💬 Handle global mint-completion refresh
   useEffect(() => {
     const handler = () => {
       console.log("window cardMinted event – refetching");
       fetchCards();
-      refetch?.();
     };
     window.addEventListener("cardMinted", handler);
     return () => window.removeEventListener("cardMinted", handler);
-  }, [fetchCards, refetch]);
-
-  useEffect(() => {
-    console.log("MyCards rendered with cards:", cards);
-    console.log("Selected card ID:", selectedCardId);
-  }, [cards, selectedCardId]);
+  }, [fetchCards]);
 
   const handleCardClick = (cardId: number) => {
     setSelectedCardId(cardId);
     onSelectCard?.(cardId);
   };
+
+  useEffect(() => {
+  const unsubscribe = onEvent("cardsUpdated", () => {
+    console.log("♻️ Received global cardsUpdated event — refreshing cards");
+    fetchCards();
+  });
+
+  return unsubscribe;
+}, [fetchCards]);
+
+  // ---------------- RENDER SECTION ----------------
 
   if (!isConnected) {
     return (
@@ -115,7 +148,7 @@ export const MyCards = ({
     );
   }
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="bg-slate-800 rounded-xl p-8 shadow-2xl border border-slate-700 flex items-center justify-center gap-2 text-slate-400">
         <Loader2 className="animate-spin" size={20} />
@@ -124,15 +157,7 @@ export const MyCards = ({
     );
   }
 
-  if (readError) {
-    return (
-      <div className="bg-slate-800 rounded-xl p-8 shadow-2xl border border-slate-700 text-red-400">
-        Failed to read from contract: {(readError as any)?.message ?? String(readError)}
-      </div>
-    );
-  }
-
-  if (!cardCount || cards.length === 0) {
+  if (cards.length === 0) {
     return (
       <div className="bg-slate-800 rounded-xl p-8 shadow-2xl border border-slate-700 text-center">
         <Layers className="mx-auto text-slate-600 mb-4" size={48} />
@@ -162,12 +187,18 @@ export const MyCards = ({
           >
             <div className="text-center">
               <div className="text-4xl mb-3">🃏</div>
-              <h3 className="text-lg font-bold text-white mb-2">{card.name}</h3>
+              <h3 className="text-lg font-bold text-white mb-1">{card.name}</h3>
+              <p className="text-sm text-slate-400 mb-2">
+                {card.classType} • {card.element}
+              </p>
               <div className="flex items-center justify-center gap-2 text-yellow-400">
                 <Sword size={16} />
                 <span className="font-semibold">{formatCardPower(card.power)}</span>
               </div>
-              <div className="mt-3 text-xs text-slate-400">ID: #{card.id.toString()}</div>
+              <div className="mt-3 text-xs text-slate-400">
+                Wins: {card.wins.toString()} • Losses: {card.losses.toString()}
+              </div>
+              <div className="mt-1 text-xs text-slate-500">ID: #{card.id.toString()}</div>
             </div>
           </div>
         ))}

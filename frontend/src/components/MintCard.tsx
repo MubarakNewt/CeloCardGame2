@@ -1,15 +1,16 @@
 import React, { useState } from "react";
-import { useWriteContract, usePublicClient } from "wagmi";
+import { useAccount, useWriteContract, usePublicClient } from "wagmi";
 import { cardFactoryAbi } from "../abi/CardFactory";
 import { CARD_FACTORY_ADDRESS } from "../utils/constants";
 import { Loader2, CheckCircle } from "lucide-react";
+import { emitEvent } from "../utils/globalEvents";
 
-// small delay helper
+// Small delay helper
 async function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// poll receipt manually for better error handling
+// Poll receipt manually for better error handling
 async function waitForReceiptWithPolling(publicClient: any, hash: `0x${string}`, {
   interval = 2000,
   timeout = 120_000,
@@ -35,75 +36,75 @@ export const MintCard: React.FC = () => {
   const [successHash, setSuccessHash] = useState<`0x${string}` | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const { address } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
 
   const handleMint = async () => {
     setError(null);
+    if (!address) return setError("Please connect your wallet first");
     if (!cardName.trim()) return setError("Enter a card name");
-    if (cardPower <= 0) return setError("Power must be greater than 0");
+    if (cardPower <= 0n) return setError("Power must be greater than 0");
+    
 
     setBusy(true);
-   try {
-  // 🧠 Step 1: Simulate first — checks for reverts, invalid args, etc.
-   if (!publicClient) throw new Error("Public client not ready");
-  const simulation = await publicClient.simulateContract({
-    address: CARD_FACTORY_ADDRESS as `0x${string}`,
-    abi: cardFactoryAbi,
-    functionName: "createCard",
-    args: [cardName, cardPower],
-    account: "0xE3F1864E378057c77064B50f948F08525C190157", // 👈 your connected wallet
-  });
+    try {
+      if (!publicClient) throw new Error("Public client not ready");
 
-  console.log("Simulation successful:", simulation);
+      // 🧠 Step 1: Simulate — ensures inputs are valid before sending tx
+      const simulation = await publicClient.simulateContract({
+        address: CARD_FACTORY_ADDRESS as `0x${string}`,
+        abi: cardFactoryAbi,
+        functionName: "createCard",
+        args: [cardName],
+        account: address,
+      });
+      console.log("Simulation successful:", simulation);
 
-  // 🪙 Step 2: Now actually send the tx
-  const txResponse = await writeContractAsync({
-    address: CARD_FACTORY_ADDRESS as `0x${string}`,
-    abi: cardFactoryAbi,
-    functionName: "createCard",
-    args: [cardName, cardPower],
-  });
-
-
-      const rawHash =
-        typeof txResponse === "string"
-          ? txResponse
-          : (txResponse as any)?.hash ?? (txResponse as any)?.transactionHash;
-
-      if (!rawHash) throw new Error("No tx hash returned from writeContract");
-      const txHash = (rawHash as string).startsWith("0x")
-        ? (rawHash as `0x${string}`)
-        : (`0x${rawHash}` as `0x${string}`);
-
-      console.log("writeContract data:", txHash);
-
-      // Wait for confirmation
-      const receipt = await waitForReceiptWithPolling(publicClient, txHash, {
-        interval: 2000,
-        timeout: 120_000,
+      // 🪙 Step 2: Send transaction
+      const txResponse = await writeContractAsync({
+        address: CARD_FACTORY_ADDRESS as `0x${string}`,
+        abi: cardFactoryAbi,
+        functionName: "createCard",
+        args: [cardName],
       });
 
-      console.log("tx receipt:", receipt);
+      const txHash =
+        typeof txResponse === "string"
+          ? (txResponse as `0x${string}`)
+          : (txResponse as any)?.hash ??
+            (txResponse as any)?.transactionHash;
+
+      if (!txHash) throw new Error("No transaction hash returned");
+
+      console.log("Transaction hash:", txHash);
+
+      // 🕒 Wait for confirmation
+      const receipt = await waitForReceiptWithPolling(publicClient, txHash);
+      console.log("Tx receipt:", receipt);
+
       if ((receipt as any).status === 0) {
         setError("Transaction reverted on-chain.");
       } else {
         setSuccessHash(txHash);
         window.dispatchEvent(new Event("cardMinted"));
+        emitEvent("cardsUpdated"); // ✅ add this line
+        setCardName("");
+        setCardPower(10n);
       }
     } catch (err: any) {
-      console.error("Mint flow error:", err);
-      setError(err?.message ?? String(err));
+      console.error("Mint error:", err);
+      setError(err?.shortMessage || err?.message || String(err));
     } finally {
       setBusy(false);
     }
   };
 
-  
-
   return (
     <div className="bg-slate-800 rounded-xl p-6 shadow-xl border border-slate-700">
-      <h3 className="text-white mb-3 text-lg font-semibold">Mint a New Card</h3>
+      <h3 className="text-white mb-3 text-lg font-semibold">
+        Mint a New Card
+      </h3>
 
       <div className="flex flex-col gap-3">
         <input
@@ -113,18 +114,14 @@ export const MintCard: React.FC = () => {
           className="w-full p-2 rounded bg-slate-700 text-white placeholder-gray-400"
         />
 
-        <input
-          type="number"
-          value={cardPower.toString()} // ✅ convert bigint to string for input display
-          onChange={(e) => setCardPower(BigInt(e.target.value || "0"))} // ✅ convert back to bigint
-          className="w-full p-2 mb-3 rounded bg-slate-700 text-white"
-        />
-
         <button
           onClick={handleMint}
           disabled={busy}
-          className={`px-4 py-2 rounded text-white font-medium ${busy ? "bg-gray-500 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-500"
-            }`}
+          className={`px-4 py-2 rounded text-white font-medium ${
+            busy
+              ? "bg-gray-500 cursor-not-allowed"
+              : "bg-indigo-600 hover:bg-indigo-500"
+          }`}
         >
           {busy ? (
             <span className="flex items-center gap-2 justify-center">

@@ -1,31 +1,9 @@
 export const cardFactoryAbi = [
   {
-    inputs: [
-      { internalType: "string", name: "name", type: "string" },
-      { internalType: "uint256", name: "power", type: "uint256" },
-    ],
+    inputs: [{ internalType: "string", name: "name", type: "string" }],
     name: "createCard",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "id", type: "uint256" }],
-    name: "cards",
-    outputs: [
-      { internalType: "uint256", name: "id", type: "uint256" },
-      { internalType: "string", name: "name", type: "string" },
-      { internalType: "uint256", name: "power", type: "uint256" },
-      { internalType: "address", name: "owner", type: "address" },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "cardCount",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
     type: "function",
   },
   {
@@ -39,14 +17,99 @@ export const cardFactoryAbi = [
     type: "function",
   },
   {
-    inputs: [
-      { internalType: "address", name: "owner", type: "address" },
-      { internalType: "uint256", name: "index", type: "uint256" },
-    ],
-    name: "ownerCards",
+    inputs: [],
+    name: "cardCount",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    name: "cards",
+    outputs: [
+      { internalType: "uint256", name: "id", type: "uint256" },
+      { internalType: "string", name: "name", type: "string" },
+      { internalType: "string", name: "classType", type: "string" },
+      { internalType: "string", name: "element", type: "string" },
+      { internalType: "uint256", name: "power", type: "uint256" },
+      { internalType: "address", name: "owner", type: "address" },
+      { internalType: "uint256", name: "wins", type: "uint256" },
+      { internalType: "uint256", name: "losses", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getMyCards",
+    outputs: [
+      {
+        components: [
+          { internalType: "uint256", name: "id", type: "uint256" },
+          { internalType: "string", name: "name", type: "string" },
+          { internalType: "string", name: "classType", type: "string" },
+          { internalType: "string", name: "element", type: "string" },
+          { internalType: "uint256", name: "power", type: "uint256" },
+          { internalType: "address", name: "owner", type: "address" },
+          { internalType: "uint256", name: "wins", type: "uint256" },
+          { internalType: "uint256", name: "losses", type: "uint256" },
+        ],
+        internalType: "struct CardFactory.Card[]",
+        name: "",
+        type: "tuple[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "cardId", type: "uint256" }],
+    name: "getCard",
+    outputs: [
+      {
+        components: [
+          { internalType: "uint256", name: "id", type: "uint256" },
+          { internalType: "string", name: "name", type: "string" },
+          { internalType: "string", name: "classType", type: "string" },
+          { internalType: "string", name: "element", type: "string" },
+          { internalType: "uint256", name: "power", type: "uint256" },
+          { internalType: "address", name: "owner", type: "address" },
+          { internalType: "uint256", name: "wins", type: "uint256" },
+          { internalType: "uint256", name: "losses", type: "uint256" },
+        ],
+        internalType: "struct CardFactory.Card",
+        name: "",
+        type: "tuple",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "uint256", name: "id", type: "uint256" },
+      { indexed: false, internalType: "string", name: "name", type: "string" },
+      { indexed: false, internalType: "string", name: "classType", type: "string" },
+      { indexed: false, internalType: "string", name: "element", type: "string" },
+      { indexed: false, internalType: "uint256", name: "power", type: "uint256" },
+      { indexed: true, internalType: "address", name: "owner", type: "address" },
+    ],
+    name: "CardCreated",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "uint256", name: "newCardId", type: "uint256" },
+      { indexed: false, internalType: "string", name: "newName", type: "string" },
+      { indexed: false, internalType: "string", name: "classType", type: "string" },
+      { indexed: false, internalType: "string", name: "element", type: "string" },
+      { indexed: false, internalType: "uint256", name: "newPower", type: "uint256" },
+      { indexed: true, internalType: "address", name: "owner", type: "address" },
+    ],
+    name: "CardsMerged",
+    type: "event",
   },
 ] as const;
 

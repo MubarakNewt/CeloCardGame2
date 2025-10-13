@@ -12,17 +12,22 @@ contract CardFactoryTest is Test {
     }
 
     function testCreateCard() public {
-        factory.createCard("Dragon", 10);
+        factory.createCard("Dragon");
         CardFactory.Card[] memory cards = factory.getMyCards();
         assertEq(cards.length, 1);
-        assertEq(cards[0].power, 10);
+
+        // Power is random, so we only assert range
+        assertGe(cards[0].power, 20);
+        assertLe(cards[0].power, 100);
     }
 
     function testMergeCards() public {
-        factory.createCard("Fire", 4);
-        factory.createCard("Ice", 6);
+        factory.createCard("Fire");
+        factory.createCard("Ice");
         factory.mergeCards(1, 2);
         CardFactory.Card[] memory cards = factory.getMyCards();
+
+        // We now expect 3 total cards (original 2 + merged)
         assertEq(cards.length, 3);
     }
 }

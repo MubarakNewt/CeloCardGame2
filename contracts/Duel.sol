@@ -28,14 +28,8 @@ contract Duel {
 
     /// @notice Start a new battle
     function startBattle(uint256 challengerCardId) external {
-        (
-            uint256 id,
-            ,
-            ,
-            address owner
-        ) = factory.cards(challengerCardId);
-
-        require(owner == msg.sender, "You don't own this card");
+        CardFactory.Card memory challengerCard = factory.getCard(challengerCardId);
+        require(challengerCard.owner == msg.sender, "You don't own this card");
 
         battleCount++;
         battles[battleCount] = Battle({
@@ -57,8 +51,8 @@ contract Duel {
         require(b.opponent == address(0), "Battle already joined");
         require(b.challenger != msg.sender, "You cannot join your own battle");
 
-        (, , , address owner) = factory.cards(opponentCardId);
-        require(owner == msg.sender, "You don't own this card");
+        CardFactory.Card memory opponentCard = factory.getCard(opponentCardId);
+        require(opponentCard.owner == msg.sender, "You don't own this card");
 
         b.opponent = msg.sender;
         b.opponentCardId = opponentCardId;
@@ -72,17 +66,17 @@ contract Duel {
         require(b.isActive, "Battle already resolved");
         require(b.opponent != address(0), "No opponent yet");
 
-        (, , uint256 power1, address owner1) = factory.cards(b.challengerCardId);
-        (, , uint256 power2, address owner2) = factory.cards(b.opponentCardId);
+        CardFactory.Card memory card1 = factory.getCard(b.challengerCardId);
+        CardFactory.Card memory card2 = factory.getCard(b.opponentCardId);
 
-        require(owner1 == b.challenger && owner2 == b.opponent, "Card ownership changed");
+        require(card1.owner == b.challenger && card2.owner == b.opponent, "Card ownership changed");
 
-        address winner = power1 >= power2 ? b.challenger : b.opponent;
+        address winner = card1.power >= card2.power ? b.challenger : b.opponent;
 
         b.isActive = false;
         b.winner = winner;
 
-        emit BattleResolved(battleId, winner, power1, power2);
+        emit BattleResolved(battleId, winner, card1.power, card2.power);
     }
 
     function getBattle(uint256 id) external view returns (Battle memory) {

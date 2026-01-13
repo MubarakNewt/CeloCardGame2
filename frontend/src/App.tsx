@@ -5,7 +5,8 @@ import { MintCard } from "./components/MintCard";
 import { MyCards } from "./components/MyCards";
 import { StartDuel } from "./components/StartDuel";
 import { JoinDuel } from "./components/JoinDuel";
-import { BattleList } from "./components/BattleList"; // ✅ Import new component
+import { BattleList } from "./components/BattleList";
+import { BattleArena } from "./components/BattleArena";
 import { Swords } from "lucide-react";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import { celo } from "wagmi/chains";
@@ -50,70 +51,81 @@ function App() {
 
         {/* ─── Main Content ──────────────────────────────── */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-6 flex gap-4">
-            <button
-              onClick={() => setActiveTab("mint")}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                activeTab === "mint"
-                  ? "bg-green-600 text-white shadow-lg"
-                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-              }`}
-            >
-              Mint Cards
-            </button>
-
-            <button
-              onClick={() => setActiveTab("duel")}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                activeTab === "duel"
-                  ? "bg-orange-600 text-white shadow-lg"
-                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-              }`}
-            >
-              Battle Arena
-            </button>
-          </div>
-
-          {/* ─── Mint Section ──────────────────────────────── */}
-          {activeTab === "mint" ? (
-            <div className="space-y-8">
-              <div className="flex justify-center">
-                <MintCard />
-              </div>
-              <MyCards onSelectCard={setSelectedCardId} />
-            </div>
+          {selectedBattleId ? (
+            /* ─── Battle Arena ──────────────────────────────── */
+            <BattleArena
+              battleId={selectedBattleId}
+              onBack={() => setSelectedBattleId(null)}
+            />
           ) : (
-            /* ─── Battle Arena Section ──────────────────────────────── */
-            <div className="space-y-8">
-              <MyCards onSelectCard={setSelectedCardId} />
+            <>
+              <div className="mb-6 flex gap-4">
+                <button
+                  onClick={() => setActiveTab("mint")}
+                  className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                    activeTab === "mint"
+                      ? "bg-green-600 text-white shadow-lg"
+                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  Mint Cards
+                </button>
 
-              {/* Show existing open battles */}
-              <div>
-                <h2 className="text-xl font-semibold text-white mb-3">
-                  🔥 Open Battles
-                </h2>
-                <BattleList onSelectBattle={setSelectedBattleId} />
+                <button
+                  onClick={() => setActiveTab("duel")}
+                  className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                    activeTab === "duel"
+                      ? "bg-orange-600 text-white shadow-lg"
+                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  Battle Arena
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    Start a New Battle
-                  </h3>
-                  <StartDuel selectedCardId={selectedCardId} />
+              {/* ─── Mint Section ──────────────────────────────── */}
+              {activeTab === "mint" ? (
+                <div className="space-y-8">
+                  <div className="flex justify-center">
+                    <MintCard />
+                  </div>
+                  <MyCards onSelectCard={setSelectedCardId} />
                 </div>
+              ) : (
+                /* ─── Battle Arena Section ──────────────────────────────── */
+                <div className="space-y-8">
+                  <MyCards onSelectCard={setSelectedCardId} />
 
-                <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    Join an Existing Battle
-                  </h3>
-                  <JoinDuel
-                    selectedCardId={selectedCardId}
-                    selectedBattleId={selectedBattleId || undefined} // ✅ Auto-fill from list
-                  />
+                  {/* Show existing open battles */}
+                  <div>
+                    <h2 className="text-xl font-semibold text-white mb-3">
+                      🔥 Open Battles
+                    </h2>
+                    <BattleList onSelectBattle={setSelectedBattleId} />
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                      <h3 className="text-lg font-semibold text-white mb-2">
+                        Start a New Battle
+                      </h3>
+                      <StartDuel selectedCardId={selectedCardId} onBattleCreated={setSelectedBattleId} />
+                    </div>
+
+                    <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                      <h3 className="text-lg font-semibold text-white mb-2">
+                        Join an Existing Battle
+                      </h3>
+                      <JoinDuel
+                        selectedCardId={selectedCardId}
+                        selectedBattleId={selectedBattleId || undefined} // ✅ Auto-fill from list
+                        onBattleJoined={setSelectedBattleId}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              )}
+            </>
           )}
         </main>
 

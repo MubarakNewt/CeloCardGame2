@@ -12,9 +12,10 @@ import { Loader2, ExternalLink, UserPlus } from "lucide-react";
 interface JoinDuelProps {
   selectedCardId: number | null;
   selectedBattleId?: number; // ✅ add this new prop
+  onBattleJoined?: (battleId: number) => void;
 }
 
-export const JoinDuel = ({ selectedCardId, selectedBattleId }: JoinDuelProps) => {
+export const JoinDuel = ({ selectedCardId, selectedBattleId, onBattleJoined }: JoinDuelProps) => {
   const [battleId, setBattleId] = useState("");
   const { isConnected } = useAccount();
   const { writeContract, data, isPending, isError, error } = useWriteContract();
@@ -102,6 +103,14 @@ export const JoinDuel = ({ selectedCardId, selectedBattleId }: JoinDuelProps) =>
             View tx
             <ExternalLink className="inline-block w-4 h-4" />
           </a>
+          {onBattleJoined && (
+            <button
+              onClick={() => onBattleJoined(Number(battleId))}
+              className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded"
+            >
+              Enter Battle Room
+            </button>
+          )}
         </div>
       )}
 

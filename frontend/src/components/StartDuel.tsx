@@ -77,9 +77,9 @@ export const StartDuel = ({
     address: DUEL_ADDRESS as `0x${string}`,
     abi: duelAbi,
     eventName: "BattleStarted",
-    onLogs: (logs) => {
+    onLogs: (logs: any[]) => {
       logs.forEach((log) => {
-        const battleId = Number((log.args as any).battleId);
+        const battleId = Number(log.args?.battleId);
         console.log("⚔️ Detected BattleStarted (live):", battleId);
         setNewBattleId(battleId);
         if (onBattleCreated) onBattleCreated(battleId);
@@ -96,8 +96,8 @@ export const StartDuel = ({
       await writeContract({
         address: DUEL_ADDRESS as `0x${string}`,
         abi: duelAbi,
-        functionName: "startBattle",
-        args: [BigInt(selectedCardId)],
+        functionName: "createBattle",
+        args: [[BigInt(selectedCardId)], 0], // 0 for TurnBased mode
       });
     } catch (err) {
       console.error("Start duel failed:", err);

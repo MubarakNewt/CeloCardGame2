@@ -16,9 +16,9 @@ contract CardFactoryTest is Test {
         CardFactory.Card[] memory cards = factory.getMyCards();
         assertEq(cards.length, 1);
 
-        // Power is random, so we only assert range
-        assertGe(cards[0].power, 20);
-        assertLe(cards[0].power, 100);
+        // Check base attack is within expected range for any rarity
+        assertGe(cards[0].identity.baseAttack, 6);  // Common minimum
+        assertLe(cards[0].identity.baseAttack, 18); // Legendary maximum
     }
 
     function testMergeCards() public {

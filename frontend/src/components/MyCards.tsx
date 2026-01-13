@@ -2,10 +2,9 @@
 import {
   useAccount,
   usePublicClient,
-  useWatchContractEvent,
 } from "wagmi";
 import { cardFactoryAbi } from "../abi/CardFactory";
-import { CARD_FACTORY_ADDRESS } from "../utils/constants";
+import { CARD_FACTORY_ADDRESS, CLASS_NAMES, ELEMENT_NAMES, RARITY_NAMES } from "../utils/constants";
 import { formatCardPower } from "../utils/helpers";
 import { Sword, Loader2, Layers } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -14,10 +13,10 @@ import { onEvent } from "../utils/globalEvents";
 interface Card {
   id: bigint;
   name: string;
-  classType: string;
-  element: string;
-  power: bigint;
-  owner: string;
+  class: number;
+  element: number;
+  rarity: number;
+  level: bigint;
   wins: bigint;
   losses: bigint;
 }
@@ -189,11 +188,11 @@ useEffect(() => {
               <div className="text-4xl mb-3">🃏</div>
               <h3 className="text-lg font-bold text-white mb-1">{card.name}</h3>
               <p className="text-sm text-slate-400 mb-2">
-                {card.classType} • {card.element}
+                {CLASS_NAMES[card.class] || "Unknown"} • {ELEMENT_NAMES[card.element] || "Unknown"} • {RARITY_NAMES[card.rarity] || "Unknown"}
               </p>
               <div className="flex items-center justify-center gap-2 text-yellow-400">
                 <Sword size={16} />
-                <span className="font-semibold">{formatCardPower(card.power)}</span>
+                <span className="font-semibold">Lv.{card.level.toString()}</span>
               </div>
               <div className="mt-3 text-xs text-slate-400">
                 Wins: {card.wins.toString()} • Losses: {card.losses.toString()}
